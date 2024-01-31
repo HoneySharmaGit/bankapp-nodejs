@@ -7,6 +7,16 @@ const AdminSchema = new mongooes.Schema({
     required: true,
     default: 0,
   },
+  firstName: {
+    type: String,
+    required: true,
+    length: 20,
+  },
+  lastName: {
+    type: String,
+    required: true,
+    length: 30,
+  },
   email: {
     type: String,
     required: true,
@@ -27,6 +37,7 @@ const AdminSchema = new mongooes.Schema({
   },
   updatedDate: {
     type: Date,
+    required: false,
   },
   role: {
     type: String,
@@ -37,7 +48,11 @@ const AdminSchema = new mongooes.Schema({
       required: true,
     },
   },
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
 });
 
-const Admin = new mongooes.model("admin", AdminSchema);
-export { Admin };
+const AdminEntity = new mongooes.model("admin", AdminSchema);
+export { AdminEntity };

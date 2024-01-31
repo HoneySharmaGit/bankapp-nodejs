@@ -5,7 +5,7 @@ const generateAuthToken = async (id, role, email) => {
       data: { _id: id, role: role, email: email },
     },
     secretKey = process.env.TOKEN_VERIFY,
-    options = { expiresIn: "10m" };
+    options = { expiresIn: "600m" };
   return jwt.sign(payload, secretKey, options);
 };
 

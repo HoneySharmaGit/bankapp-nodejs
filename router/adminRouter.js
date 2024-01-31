@@ -4,6 +4,10 @@ import {
   editAdminController,
   getAdminController,
   adminLoginController,
+  adminOtpGenerateAndSendController,
+  adminOtpVerificationController,
+  adminPasswordChangeController,
+  adminPasswordForgetController,
 } from "../controller/adminController.js";
 import { authenticateAdminToken } from "../config/jwtConfig.js";
 
@@ -24,6 +28,30 @@ admin_router.get(
   `${baseUrl}/:id/get`,
   authenticateAdminToken,
   getAdminController
+);
+
+admin_router.post(
+  `${baseUrl}/generateOtp/send`,
+  authenticateAdminToken,
+  adminOtpGenerateAndSendController
+);
+
+admin_router.get(
+  `${baseUrl}/verifyOtp`,
+  authenticateAdminToken,
+  adminOtpVerificationController
+);
+
+admin_router.put(
+  `${baseUrl}/password/change`,
+  authenticateAdminToken,
+  adminPasswordChangeController
+);
+
+admin_router.put(
+  `${baseUrl}/password/forget`,
+  authenticateAdminToken,
+  adminPasswordForgetController
 );
 
 export { admin_router };
