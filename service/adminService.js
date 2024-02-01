@@ -1,9 +1,10 @@
 import { AdminEntity } from "../entity/adminEntity.js";
+import { MerchantEntity } from "../entity/merchantEntity.js";
 import { OtpEntity } from "../entity/otpEntity.js";
 import EmailService from "../utils/emailSender.js";
 import bcrypt from "bcryptjs";
 import { generateAuthToken } from "../config/jwtConfig.js";
-import { verifyCredentials } from "../utils/commonUtil.js";
+import { verifyCredentials, generateMerchantId } from "../utils/commonUtil.js";
 
 // code to register the admin
 const registerAdmin = async (req) => {
@@ -241,6 +242,78 @@ const forgetPasswordForAdmin = async (req) => {
   };
 };
 
+// code to onboard the merchant by admin
+const onboardMerchant = async (req) => {
+  const existingMerchant = await MerchantEntity.findOne({
+    $or: [{ email: req.email }, { phoneNumber: req.phoneNumber }],
+  });
+  if (existingMerchant) {
+    return {
+      message: "email or phoneNumber already exists.",
+      status: "error",
+      data: null,
+    };
+  }
+  const merchantObject = await createMerchantObject(req);
+  const merchant = new MerchantEntity(merchantObject);
+  await merchant.save();
+  return {
+    message: "merchant onboarded successfully",
+    status: "success",
+    data: merchant,
+  };
+};
+
+async function createMerchantObject(req) {
+  const {
+    firstName,
+    lastName,
+    email,
+    password,
+    balance,
+    address,
+    phoneNumber,
+    ifscCode,
+    accountNumber,
+    gstNumber,
+  } = req.body;
+  const merchnatId = await generateMerchantId();
+  return {
+    firstName,
+    lastName,
+    email,
+    password,
+    balance,
+    address,
+    phoneNumber,
+    ifscCode,
+    accountNumber,
+    gstNumber,
+    merchantId: merchnatId,
+  };
+}
+
+// code to active/inactive the merchant
+const activeOrInActiveMerchant = async (req) => {
+  const merchantId = req.params.merchantId;
+  const merchant = await MerchantEntity.findOne({ merchantId });
+  if (!merchant) {
+    return {
+      message: "merchant not found",
+      status: "error",
+      data: null,
+    };
+  }
+  merchant.isActive = !merchant.isActive;
+  merchant.updatedDate = Date.now();
+  merchant.save();
+  return {
+    message: "merchant active status updated",
+    status: "success",
+    data: null,
+  };
+};
+
 export {
   registerAdmin,
   editAdmin,
@@ -250,4 +323,6 @@ export {
   verifyOtpByAdmin,
   changePasswordForAdmin,
   forgetPasswordForAdmin,
+  onboardMerchant,
+  activeOrInActiveMerchant,
 };
