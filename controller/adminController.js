@@ -4,7 +4,7 @@ import {
   getAdmin,
   adminLogin,
   generateAndSendOtp,
-  verifyOtpByAdmin,
+  verifyOtpOfAdmin,
   changePasswordForAdmin,
   forgetPasswordForAdmin,
   onboardMerchant,
@@ -88,7 +88,7 @@ const adminOtpGenerateAndSendController = async (req, resp) => {
 
 const adminOtpVerificationController = async (req, resp) => {
   try {
-    const response = await verifyOtpByAdmin(req);
+    const response = await verifyOtpOfAdmin(req);
     return resp.status(200).send(response);
   } catch (error) {
     console.error("Error verifying otp admin: " + error);

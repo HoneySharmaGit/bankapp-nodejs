@@ -31,4 +31,14 @@ async function generateMerchantId() {
   }
 }
 
-export { verifyCredentials, generateRandomString, generateMerchantId };
+function generateRandomOtp() {
+  const otp = Math.floor(100000 + Math.random() * 900000);
+  return otp.toString().slice(0, 6);
+}
+
+export {
+  verifyCredentials,
+  generateRandomString,
+  generateMerchantId,
+  generateRandomOtp,
+};

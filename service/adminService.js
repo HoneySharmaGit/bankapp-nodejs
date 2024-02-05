@@ -4,7 +4,11 @@ import { OtpEntity } from "../entity/otpEntity.js";
 import EmailService from "../utils/emailSender.js";
 import bcrypt from "bcryptjs";
 import { generateAuthToken } from "../config/jwtConfig.js";
-import { verifyCredentials, generateMerchantId } from "../utils/commonUtil.js";
+import {
+  verifyCredentials,
+  generateMerchantId,
+  generateRandomOtp,
+} from "../utils/commonUtil.js";
 
 // code to register the admin
 const registerAdmin = async (req) => {
@@ -107,7 +111,7 @@ const adminLogin = async (req) => {
   }
 };
 
-// code to generate and send OTP for the
+// code to generate and send OTP
 const generateAndSendOtp = async (req) => {
   const email = req.body.email;
   const admin = await AdminEntity.findOne({ email });
@@ -142,13 +146,8 @@ const generateAndSendOtp = async (req) => {
   };
 };
 
-function generateRandomOtp() {
-  const otp = Math.floor(100000 + Math.random() * 900000);
-  return otp.toString().slice(0, 6);
-}
-
 // code to verify the otp entered by admin
-const verifyOtpByAdmin = async (req) => {
+const verifyOtpOfAdmin = async (req) => {
   const enteredOtp = req.body.otp;
   if (enteredOtp.length != 6) {
     return {
@@ -278,6 +277,7 @@ async function createMerchantObject(req) {
     gstNumber,
   } = req.body;
   const merchnatId = await generateMerchantId();
+  password = await bcrypt.hash(password, 12);
   return {
     firstName,
     lastName,
@@ -320,7 +320,7 @@ export {
   getAdmin,
   adminLogin,
   generateAndSendOtp,
-  verifyOtpByAdmin,
+  verifyOtpOfAdmin,
   changePasswordForAdmin,
   forgetPasswordForAdmin,
   onboardMerchant,

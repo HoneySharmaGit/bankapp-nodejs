@@ -9,6 +9,15 @@ const generateAuthToken = async (id, role, email) => {
   return jwt.sign(payload, secretKey, options);
 };
 
+const generateMerchantAuthToken = async (id, role, email, isActive) => {
+  const payload = {
+      data: { _id: id, role: role, email: email, isActive: isActive },
+    },
+    secretKey = process.env.TOKEN_VERIFY,
+    options = { expiresIn: "600m" };
+  return jwt.sign(payload, secretKey, options);
+};
+
 function authenticateAdminToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
@@ -49,4 +58,9 @@ function verifyAccessToken(token) {
   }
 }
 
-export { generateAuthToken, verifyAccessToken, authenticateAdminToken };
+export {
+  generateAuthToken,
+  generateMerchantAuthToken,
+  verifyAccessToken,
+  authenticateAdminToken,
+};
