@@ -29,7 +29,7 @@ const registerAdmin = async (req) => {
 // code to edit the admin
 const editAdmin = async (req) => {
   const adminId = req.params.id;
-  const admin = await AdminEntity.findById(adminId);
+  let admin = await AdminEntity.findById(adminId);
   if (!admin) {
     return {
       message: "admin not found.",
@@ -268,7 +268,6 @@ async function createMerchantObject(req) {
     firstName,
     lastName,
     email,
-    password,
     balance,
     address,
     phoneNumber,
@@ -277,7 +276,7 @@ async function createMerchantObject(req) {
     gstNumber,
   } = req.body;
   const merchnatId = await generateMerchantId();
-  password = await bcrypt.hash(password, 12);
+  const password = await bcrypt.hash(req.body.password, 12);
   return {
     firstName,
     lastName,
@@ -314,6 +313,58 @@ const activeOrInActiveMerchant = async (req) => {
   };
 };
 
+const getMerchantInfo = async (req) => {
+  const merchantId = req.body.merchantId;
+  const merchant = await MerchantEntity.findOne({ merchantId });
+  if (!merchant) {
+    return {
+      message: "merchant not found",
+      status: "error",
+      data: null,
+    };
+  }
+  return {
+    message: "merchant fetched successfully.",
+    status: "success",
+    data: await merchantMap(merchant),
+  };
+};
+
+async function merchantMap(merchant) {
+  const {
+    _id,
+    merchantId,
+    firstName,
+    lastName,
+    email,
+    phoneNumber,
+    balance,
+    role,
+    isActive,
+    address,
+    accountNumber,
+    ifscCode,
+    gstNumber,
+    createdDate,
+  } = merchant;
+  return {
+    _id,
+    merchantId,
+    firstName,
+    lastName,
+    email,
+    phoneNumber,
+    balance,
+    role,
+    isActive,
+    address,
+    accountNumber,
+    ifscCode,
+    gstNumber,
+    createdDate,
+  };
+}
+
 export {
   registerAdmin,
   editAdmin,
@@ -325,4 +376,5 @@ export {
   forgetPasswordForAdmin,
   onboardMerchant,
   activeOrInActiveMerchant,
+  getMerchantInfo,
 };

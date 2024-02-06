@@ -9,9 +9,21 @@ const generateAuthToken = async (id, role, email) => {
   return jwt.sign(payload, secretKey, options);
 };
 
-const generateMerchantAuthToken = async (id, role, email, isActive) => {
+const generateMerchantAuthToken = async (
+  id,
+  role,
+  email,
+  isActive,
+  merchantId
+) => {
   const payload = {
-      data: { _id: id, role: role, email: email, isActive: isActive },
+      data: {
+        _id: id,
+        role: role,
+        email: email,
+        isActive: isActive,
+        merchantId: merchantId,
+      },
     },
     secretKey = process.env.TOKEN_VERIFY,
     options = { expiresIn: "600m" };
@@ -22,12 +34,40 @@ function authenticateAdminToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
   if (!token) {
-    return res.sendStatus(401);
+    return res
+      .status(401)
+      .json({ status: "error", message: "token not found", data: null });
   }
   const result = verifyAccessToken(token);
   if (result.status === "valid") {
     const userRoles = result.decoded.data.role || [];
     const requiredRole = "admin";
+    if (!userRoles.includes(requiredRole)) {
+      return res
+        .status(401)
+        .json({ status: "error", message: "unauthorized access", data: null });
+    }
+    req.user = result.data;
+    next();
+  } else {
+    return res
+      .status(403)
+      .json({ status: "error", message: result.message, data: null });
+  }
+}
+
+function authenticateMerchantToken(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) {
+    return res
+      .status(401)
+      .json({ status: "error", message: "token not found", data: null });
+  }
+  const result = verifyAccessToken(token);
+  if (result.status === "valid") {
+    const userRoles = result.decoded.data.role || [];
+    const requiredRole = "merchant";
     if (!userRoles.includes(requiredRole)) {
       return res
         .status(401)
@@ -63,4 +103,5 @@ export {
   generateMerchantAuthToken,
   verifyAccessToken,
   authenticateAdminToken,
+  authenticateMerchantToken,
 };

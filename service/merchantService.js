@@ -1,13 +1,13 @@
 import { MerchantEntity } from "../entity/merchantEntity.js";
 import { generateMerchantAuthToken } from "../config/jwtConfig.js";
+import EmailService from "../utils/emailSender.js";
 import { verifyCredentials, generateRandomOtp } from "../utils/commonUtil.js";
 import { OtpEntity } from "../entity/otpEntity.js";
-import { ftruncate } from "fs";
 
 // code to login into merchant account
 const merchantLogin = async (req) => {
   const { email, password } = req.body;
-  const merchant = MerchantEntity.findOne(email);
+  const merchant = await MerchantEntity.findOne({ email });
   if (!merchant) {
     return {
       message: "email not registered.",
@@ -21,7 +21,8 @@ const merchantLogin = async (req) => {
       merchant._id,
       merchant.role,
       merchant.email,
-      merchant.isActive
+      merchant.isActive,
+      merchant.merchantId
     );
     return {
       message: "merchant login successful.",
@@ -108,25 +109,41 @@ const verifyOtpOfMerchant = async (req) => {
 
 // code to edit the merchant
 const editMerchant = async (req) => {
-  const existingMerchant = await MerchantEntity.findOne({
-    $or: [{ email: req.email }, { phoneNumber: req.phoneNumber }],
-  });
-  if (existingMerchant) {
-    return {
-      message: "email or phoneNumber already exists.",
-      status: "error",
-      data: null,
-    };
+  if (req.phoneNumber) {
+    const existingMerchant = await MerchantEntity.findOne({
+      phoneNumber: req.phoneNumber,
+    });
+    if (existingMerchant) {
+      return {
+        message: "phoneNumber already exists.",
+        status: "error",
+        data: null,
+      };
+    }
   }
-  const merchant = await MerchantEntity.findOne({ email });
+  if (req.email) {
+    const existingMerchant = await MerchantEntity.findOne({
+      emaili: req.email,
+    });
+    if (existingMerchant) {
+      return {
+        message: "email already exists.",
+        status: "error",
+        data: null,
+      };
+    }
+  }
+  const merchantId = req.params.merchantId;
+  let merchant = await MerchantEntity.findOne({ merchantId });
   if (!merchant) {
     return {
-      message: "email not registered.",
+      message: "merchant not found.",
       status: "error",
       data: null,
     };
   }
   merchant = await updateMerchantObject(merchant, req);
+  merchant.updatedDate = Date.now();
   await merchant.save();
   return {
     message: "merchant updated successfully",
@@ -136,16 +153,150 @@ const editMerchant = async (req) => {
 };
 
 async function updateMerchantObject(merchant, req) {
-  merchant.email = req.body.email;
-  merchant.firstName = req.body.firstName;
-  merchant.lastName = req.body.lastName;
-  merchant.phoneNumber = req.body.phoneNumber;
-  merchant.address = req.body.address;
-  merchant.ifscCode = req.body.ifscCode;
-  merchant.accountNumber = req.body.accountNumber;
-  merchant.gstNumber = req.body.gstNumber;
+  if (req.body.firstName && req.body.firstName !== merchant.firstName) {
+    merchant.firstName = req.body.firstName;
+  }
+  if (req.body.lastName && req.body.lastName !== merchant.lastName) {
+    merchant.lastName = req.body.lastName;
+  }
+  if (req.body.phoneNumber && req.body.phoneNumber !== merchant.phoneNumber) {
+    merchant.phoneNumber = req.body.phoneNumber;
+  }
+  if (req.body.address && req.body.address !== merchant.address) {
+    merchant.address = req.body.address;
+  }
+  if (req.body.ifscCode && req.body.ifscCode !== merchant.ifscCode) {
+    merchant.ifscCode = req.body.ifscCode;
+  }
+  if (
+    req.body.accountNumber &&
+    req.body.accountNumber !== merchant.accountNumber
+  ) {
+    merchant.accountNumber = req.body.accountNumber;
+  }
+  if (req.body.gstNumber && req.body.gstNumber !== merchant.gstNumber) {
+    merchant.gstNumber = req.body.gstNumber;
+  }
 
   return merchant;
 }
 
-export { merchantLogin, generateAndSendOtp, verifyOtpOfMerchant };
+// code to get the merchant profile
+const getMerchantProfile = async (req) => {
+  const merchantId = req.params.merchantId;
+  const merchant = await MerchantEntity.findOne({ merchantId });
+  if (!merchant) {
+    return {
+      message: "merchant not found",
+      status: "error",
+      data: null,
+    };
+  }
+  return {
+    message: "merchant fetched successfully.",
+    status: "success",
+    data: await merchantMap(merchant),
+  };
+};
+
+async function merchantMap(merchant) {
+  const {
+    _id,
+    merchantId,
+    firstName,
+    lastName,
+    email,
+    phoneNumber,
+    balance,
+    address,
+    accountNumber,
+    ifscCode,
+    gstNumber,
+    createdDate,
+  } = merchant;
+  return {
+    _id,
+    merchantId,
+    firstName,
+    lastName,
+    email,
+    phoneNumber,
+    balance,
+    address,
+    accountNumber,
+    ifscCode,
+    gstNumber,
+    createdDate,
+  };
+}
+
+// code for password change of the merchant
+const changePasswordForMerchant = async (req) => {
+  const { email, password, newPassword } = req.body;
+  const merchant = await MerchantEntity.findOne({ email });
+  if (!merchant) {
+    return {
+      message: "email not registered.",
+      status: "error",
+      data: null,
+    };
+  }
+  const isValid = await verifyCredentials(password, merchant.password);
+  if (isValid) {
+    merchant.password = await bcrypt.hash(newPassword, 12);
+    merchant.updatedDate = Date.now();
+    await merchant.save();
+    EmailService.sendEmail(
+      email,
+      "password changed successfully",
+      "Hello sir, your password has been changed successfully. you will be able to login to your account using your new password now!"
+    );
+    return {
+      message: "password changed successfully",
+      status: "success",
+      data: null,
+    };
+  } else {
+    return {
+      message: "invalid credentails",
+      status: "error",
+      data: null,
+    };
+  }
+};
+
+// code for password forget of the merchant
+const forgetPasswordForMerchant = async (req) => {
+  const { email, newPassword } = req.body;
+  const merchant = await MerchantEntity.findOne({ email });
+  if (!merchant) {
+    return {
+      message: "email not registered.",
+      status: "error",
+      data: null,
+    };
+  }
+  merchant.password = await bcrypt.hash(newPassword, 12);
+  merchant.updatedDate = Date.now();
+  await merchant.save();
+  EmailService.sendEmail(
+    email,
+    "password changed successfully",
+    "Hello sir, your password has been changed successfully. you will be able to login to your account using your new password now!"
+  );
+  return {
+    message: "password changed successfully",
+    status: "success",
+    data: null,
+  };
+};
+
+export {
+  merchantLogin,
+  generateAndSendOtp,
+  verifyOtpOfMerchant,
+  editMerchant,
+  getMerchantProfile,
+  changePasswordForMerchant,
+  forgetPasswordForMerchant,
+};

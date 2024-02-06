@@ -10,6 +10,7 @@ import {
   adminPasswordForgetController,
   onboardMerchantController,
   activeOrInActiveMerchantController,
+  getMerchantController,
 } from "../controller/adminController.js";
 import { authenticateAdminToken } from "../config/jwtConfig.js";
 
@@ -66,6 +67,12 @@ admin_router.put(
   `${baseUrl}/merchant/:merchantId/active&inactive`,
   authenticateAdminToken,
   activeOrInActiveMerchantController
+);
+
+admin_router.get(
+  `${baseUrl}/merchant/:merchantId`,
+  authenticateAdminToken,
+  getMerchantController
 );
 
 export { admin_router };

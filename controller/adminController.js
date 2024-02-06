@@ -9,6 +9,7 @@ import {
   forgetPasswordForAdmin,
   onboardMerchant,
   activeOrInActiveMerchant,
+  getMerchantInfo,
 } from "../service/adminService.js";
 
 const registerAdminController = async (req, resp) => {
@@ -161,6 +162,21 @@ const activeOrInActiveMerchantController = async (req, resp) => {
   }
 };
 
+const getMerchantController = async (req, resp) => {
+  try {
+    const response = await getMerchantInfo(req);
+    return resp.status(200).send(response);
+  } catch (error) {
+    console.error("Error active/inactive merchant: " + error);
+    resp.send({
+      message: "internal server error",
+      error: error,
+      status: "error",
+      data: null,
+    });
+  }
+};
+
 export {
   registerAdminController,
   editAdminController,
@@ -172,4 +188,5 @@ export {
   adminPasswordForgetController,
   onboardMerchantController,
   activeOrInActiveMerchantController,
+  getMerchantController,
 };
