@@ -3,6 +3,8 @@ import { generateMerchantAuthToken } from "../config/jwtConfig.js";
 import EmailService from "../utils/emailSender.js";
 import { verifyCredentials, generateRandomOtp } from "../utils/commonUtil.js";
 import { OtpEntity } from "../entity/otpEntity.js";
+import { LoadMoneyEntity } from "../entity/loadMoneyEntity.js";
+import { AuthRecordEntity } from "../entity/authRecordEntity.js";
 
 // code to login into merchant account
 const merchantLogin = async (req) => {
@@ -24,10 +26,19 @@ const merchantLogin = async (req) => {
       merchant.isActive,
       merchant.merchantId
     );
+    const authCredentials = await AuthRecordEntity.findOne({
+      $and: [{ merchantId: merchant.merchantId }, { isExpired: false }],
+    });
     return {
       message: "merchant login successful.",
       status: "success",
-      data: token,
+      data: {
+        token: token,
+        authCredentials: {
+          xClientId: authCredentials.xClientId,
+          xSecretId: authCredentials.xSecretId,
+        },
+      },
     };
   } else {
     return {
@@ -291,6 +302,128 @@ const forgetPasswordForMerchant = async (req) => {
   };
 };
 
+// code to send load-money request to the admin
+const requestLoadMoney = async (req) => {
+  const merchantId = req.params.merchantId;
+  const merchant = await MerchantEntity.findOne({ merchantId });
+  if (!merchant) {
+    return {
+      message: "merchant not found",
+      status: "error",
+      data: null,
+    };
+  }
+  const existingLoadMoneyRequest = await LoadMoneyEntity.findOne({
+    referenceUtr: req.body.referenceUtr,
+  });
+  if (existingLoadMoneyRequest) {
+    return {
+      message: "provide unique reference UTR",
+      status: "error",
+      data: null,
+    };
+  }
+  const loadMoney = await createLoadMoneyEntity(req);
+  loadMoney.save();
+  return {
+    message: "loadmoney request raised successfully",
+    status: "success",
+    data: loadMoney,
+  };
+};
+
+async function createLoadMoneyEntity(req) {
+  const loadMoneyEntity = new LoadMoneyEntity({
+    merchantId: req.params.merchantId,
+    email: req.body.email,
+    name: req.body.name,
+    phoneNumber: req.body.phoneNumber,
+    amount: req.body.amount,
+    merchantAccountNumber: req.body.merchantAccountNumber,
+    merchantBankName: req.body.merchantBankName,
+    merchantIfscCode: req.body.merchantIfscCode,
+    adminAccountNumber: req.body.adminAccountNumber,
+    adminBankName: req.body.adminBankName,
+    referenceUtr: req.body.referenceUtr,
+    remarks: req.body.remarks,
+    requestDate: Date.now(),
+  });
+  return loadMoneyEntity;
+}
+
+// code to fetch all the loadmoney request raised by merchant
+const fetchAllLoadMoneyRequest = async (req) => {
+  const merchantId = req.params.merchantId;
+  const merchant = await MerchantEntity.findOne({ merchantId });
+  if (!merchant) {
+    return {
+      message: "merchant not found",
+      status: "error",
+      data: null,
+    };
+  }
+  const loadMoneyRequestList = await LoadMoneyEntity.find({ merchantId }).sort({
+    _id: -1,
+  });
+  return {
+    message: "all prefund request fetched",
+    status: "success",
+    data: loadMoneyRequestList,
+  };
+};
+
+// code to generate new xClientId and xSecretId of merchant
+const generateNewXClientIdAndXSecretId = async (req) => {
+  const merchantId = req.params.merchantId;
+  const merchant = await MerchantEntity.findOne({ merchantId });
+  if (!merchant) {
+    return {
+      message: "merchant not found",
+      status: "error",
+      data: null,
+    };
+  }
+  const existingAuthRecord = await AuthRecordEntity.findOne({
+    $and: [{ merchantId: merchantId }, { isExpired: false }],
+  });
+  if (existingAuthRecord) {
+    existingAuthRecord.isExpired = true;
+    existingAuthRecord.save();
+  }
+  const newAuthRecord = await new AuthRecordEntity({
+    merchantId: merchantId,
+  });
+  await newAuthRecord.save();
+  return {
+    status: "success",
+    message: "new xClientId and xSecretId generated",
+    data: newAuthRecord,
+  };
+};
+
+// code to fetch all xClientId and xSecretId of the merchant
+const fetchAllXClientIdAndXSecretId = async (req) => {
+  const merchantId = req.params.merchantId;
+  const merchant = await MerchantEntity.findOne({ merchantId });
+  if (!merchant) {
+    return {
+      message: "merchant not found",
+      status: "error",
+      data: null,
+    };
+  }
+  const xClientIdAndXSecretIdList = await AuthRecordEntity.find({
+    merchantId: merchantId,
+  }).sort({ _id: -1 });
+  return {
+    status: "success",
+    message: "all xClientId and xSecretId fetched",
+    data: xClientIdAndXSecretIdList,
+  };
+};
+
+//
+
 export {
   merchantLogin,
   generateAndSendOtp,
@@ -299,4 +432,8 @@ export {
   getMerchantProfile,
   changePasswordForMerchant,
   forgetPasswordForMerchant,
+  requestLoadMoney,
+  fetchAllLoadMoneyRequest,
+  generateNewXClientIdAndXSecretId,
+  fetchAllXClientIdAndXSecretId,
 };

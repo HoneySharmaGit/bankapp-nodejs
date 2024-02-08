@@ -10,6 +10,7 @@ import {
   onboardMerchant,
   activeOrInActiveMerchant,
   getMerchantInfo,
+  changeStatusOfLoadMoneyRequest,
 } from "../service/adminService.js";
 
 const registerAdminController = async (req, resp) => {
@@ -167,7 +168,22 @@ const getMerchantController = async (req, resp) => {
     const response = await getMerchantInfo(req);
     return resp.status(200).send(response);
   } catch (error) {
-    console.error("Error active/inactive merchant: " + error);
+    console.error("Error fetching merchants: " + error);
+    resp.send({
+      message: "internal server error",
+      error: error,
+      status: "error",
+      data: null,
+    });
+  }
+};
+
+const changeLoadMoneyRequestStatusController = async (req, resp) => {
+  try {
+    const response = await changeStatusOfLoadMoneyRequest(req);
+    return resp.status(200).send(response);
+  } catch (error) {
+    console.error("Error changing loadmoney status: " + error);
     resp.send({
       message: "internal server error",
       error: error,
@@ -189,4 +205,5 @@ export {
   onboardMerchantController,
   activeOrInActiveMerchantController,
   getMerchantController,
+  changeLoadMoneyRequestStatusController,
 };

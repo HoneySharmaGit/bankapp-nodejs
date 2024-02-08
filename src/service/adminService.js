@@ -9,6 +9,8 @@ import {
   generateMerchantId,
   generateRandomOtp,
 } from "../utils/commonUtil.js";
+import { AuthRecordEntity } from "../entity/authRecordEntity.js";
+import { LoadMoneyEntity } from "../entity/loadMoneyEntity.js";
 
 // code to register the admin
 const registerAdmin = async (req) => {
@@ -256,6 +258,10 @@ const onboardMerchant = async (req) => {
   const merchantObject = await createMerchantObject(req);
   const merchant = new MerchantEntity(merchantObject);
   await merchant.save();
+  const newAuthRecord = await new AuthRecordEntity({
+    merchantId: merchant.merchantId,
+  });
+  await newAuthRecord.save();
   return {
     message: "merchant onboarded successfully",
     status: "success",
@@ -365,6 +371,37 @@ async function merchantMap(merchant) {
   };
 }
 
+// code to accept or reject the loadmoney request sent by merchant
+const changeStatusOfLoadMoneyRequest = async (req) => {
+  const { referenceUtr, merchantId, status } = req.body;
+  const merchant = await MerchantEntity.findOne({ merchantId });
+  if (!merchant) {
+    return {
+      message: "merchant not found",
+      status: "error",
+      data: null,
+    };
+  }
+  const existingLoadMoneyRequest = await LoadMoneyEntity.findOne({
+    $and: [{ merchantId: merchantId }, { referenceUtr: referenceUtr }],
+  });
+  if (!existingLoadMoneyRequest) {
+    return {
+      status: "error",
+      message: "loadmoney request not found",
+      data: null,
+    };
+  }
+  existingLoadMoneyRequest.actionTakenDate = Date.now();
+  existingLoadMoneyRequest.status = status;
+  existingLoadMoneyRequest.save();
+  return {
+    status: "success",
+    message: `admin ${status} loadmoney request`,
+    data: existingLoadMoneyRequest,
+  };
+};
+
 export {
   registerAdmin,
   editAdmin,
@@ -377,4 +414,5 @@ export {
   onboardMerchant,
   activeOrInActiveMerchant,
   getMerchantInfo,
+  changeStatusOfLoadMoneyRequest,
 };

@@ -1,4 +1,4 @@
-import { express } from "../app.js";
+import { express } from "../../app.js";
 import {
   registerAdminController,
   editAdminController,
@@ -11,6 +11,7 @@ import {
   onboardMerchantController,
   activeOrInActiveMerchantController,
   getMerchantController,
+  changeLoadMoneyRequestStatusController,
 } from "../controller/adminController.js";
 import { authenticateAdminToken } from "../config/jwtConfig.js";
 
@@ -21,7 +22,7 @@ admin_router.post(`${baseUrl}/register`, registerAdminController);
 
 admin_router.post(`${baseUrl}/login`, adminLoginController);
 
-admin_router.put(
+admin_router.patch(
   `${baseUrl}/:id/edit`,
   authenticateAdminToken,
   editAdminController
@@ -45,13 +46,13 @@ admin_router.get(
   adminOtpVerificationController
 );
 
-admin_router.put(
+admin_router.patch(
   `${baseUrl}/password/change`,
   authenticateAdminToken,
   adminPasswordChangeController
 );
 
-admin_router.put(
+admin_router.patch(
   `${baseUrl}/password/forget`,
   authenticateAdminToken,
   adminPasswordForgetController
@@ -63,7 +64,7 @@ admin_router.post(
   onboardMerchantController
 );
 
-admin_router.put(
+admin_router.patch(
   `${baseUrl}/merchant/:merchantId/active&inactive`,
   authenticateAdminToken,
   activeOrInActiveMerchantController
@@ -73,6 +74,12 @@ admin_router.get(
   `${baseUrl}/merchant/:merchantId`,
   authenticateAdminToken,
   getMerchantController
+);
+
+admin_router.patch(
+  `${baseUrl}/loadMoney/status/change`,
+  authenticateAdminToken,
+  changeLoadMoneyRequestStatusController
 );
 
 export { admin_router };

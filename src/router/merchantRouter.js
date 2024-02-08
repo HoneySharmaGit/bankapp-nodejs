@@ -1,4 +1,4 @@
-import { express } from "../app.js";
+import { express } from "../../app.js";
 import {
   merchantLoginController,
   merchantOtpGenerateAndSendController,
@@ -7,6 +7,10 @@ import {
   getMerchantController,
   merchantPasswordChangeController,
   merchantPasswordForgetController,
+  loadMoneyRequestController,
+  allLoadMoneyRequestFetchController,
+  xClientIdAndXSecretIdCreationController,
+  xClientIdAndXSecretIdFetchController,
 } from "../controller/merchantController.js";
 import { authenticateMerchantToken } from "../config/jwtConfig.js";
 
@@ -26,7 +30,7 @@ merchant_router.get(
   merchantOtpVerificationController
 );
 
-merchant_router.put(
+merchant_router.patch(
   `${baseUrl}/:merchantId/edit`,
   authenticateMerchantToken,
   editMerchantController
@@ -38,15 +42,40 @@ merchant_router.get(
   getMerchantController
 );
 
-merchant_router.put(
+merchant_router.patch(
   `${baseUrl}/password/change`,
   authenticateMerchantToken,
   merchantPasswordChangeController
 );
-merchant_router.put(
+
+merchant_router.patch(
   `${baseUrl}/password/forget`,
   authenticateMerchantToken,
   merchantPasswordForgetController
+);
+
+merchant_router.post(
+  `${baseUrl}/:merchantId/loadmoney/request`,
+  authenticateMerchantToken,
+  loadMoneyRequestController
+);
+
+merchant_router.get(
+  `${baseUrl}/:merchantId/loadmoney/request`,
+  authenticateMerchantToken,
+  allLoadMoneyRequestFetchController
+);
+
+merchant_router.post(
+  `${baseUrl}/:merchantId/generate/XCredentials`,
+  authenticateMerchantToken,
+  xClientIdAndXSecretIdCreationController
+);
+
+merchant_router.get(
+  `${baseUrl}/:merchantId/fetch/XCredentials`,
+  authenticateMerchantToken,
+  xClientIdAndXSecretIdFetchController
 );
 
 export { merchant_router };
