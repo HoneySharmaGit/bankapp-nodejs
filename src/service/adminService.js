@@ -102,7 +102,9 @@ const adminLogin = async (req) => {
     return {
       message: "admin login successful.",
       status: "success",
-      data: token,
+      data: {
+        token: token,
+      },
     };
   } else {
     return {
@@ -383,7 +385,11 @@ const changeStatusOfLoadMoneyRequest = async (req) => {
     };
   }
   const existingLoadMoneyRequest = await LoadMoneyEntity.findOne({
-    $and: [{ merchantId: merchantId }, { referenceUtr: referenceUtr }],
+    $and: [
+      { merchantId: merchantId },
+      { referenceUtr: referenceUtr },
+      { actionTakenDate: null },
+    ],
   });
   if (!existingLoadMoneyRequest) {
     return {
@@ -395,10 +401,32 @@ const changeStatusOfLoadMoneyRequest = async (req) => {
   existingLoadMoneyRequest.actionTakenDate = Date.now();
   existingLoadMoneyRequest.status = status;
   existingLoadMoneyRequest.save();
+  // code to update the merchant balance
+  if (status === "accepted") {
+    merchant.balance = merchant.balance + existingLoadMoneyRequest.amount;
+    merchant.save();
+    // amount should be deducted from master-admin balance
+    const masterAdmin = await AdminEntity.findOne({
+      role: "admin",
+      /*{ role: "master-admin" }*/
+    });
+    masterAdmin.balance = masterAdmin.balance - existingLoadMoneyRequest.amount;
+    masterAdmin.save();
+  }
   return {
     status: "success",
     message: `admin ${status} loadmoney request`,
     data: existingLoadMoneyRequest,
+  };
+};
+
+// code to fetch all loadMoney requests of merchants
+const fetchAllLoadMoneyRequest = async (req) => {
+  const allLoadMoneyList = await LoadMoneyEntity.find().sort({ _id: -1 });
+  return {
+    status: "success",
+    message: "all loadmoney request fetched",
+    data: allLoadMoneyList,
   };
 };
 
@@ -415,4 +443,5 @@ export {
   activeOrInActiveMerchant,
   getMerchantInfo,
   changeStatusOfLoadMoneyRequest,
+  fetchAllLoadMoneyRequest,
 };

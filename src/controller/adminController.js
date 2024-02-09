@@ -11,6 +11,7 @@ import {
   activeOrInActiveMerchant,
   getMerchantInfo,
   changeStatusOfLoadMoneyRequest,
+  fetchAllLoadMoneyRequest,
 } from "../service/adminService.js";
 
 const registerAdminController = async (req, resp) => {
@@ -193,6 +194,21 @@ const changeLoadMoneyRequestStatusController = async (req, resp) => {
   }
 };
 
+const fetchAllLoadMoneyController = async (req, resp) => {
+  try {
+    const response = await fetchAllLoadMoneyRequest(req);
+    return resp.status(200).send(response);
+  } catch (error) {
+    console.error("Error changing loadmoney status: " + error);
+    resp.send({
+      message: "internal server error",
+      error: error,
+      status: "error",
+      data: null,
+    });
+  }
+};
+
 export {
   registerAdminController,
   editAdminController,
@@ -206,4 +222,5 @@ export {
   activeOrInActiveMerchantController,
   getMerchantController,
   changeLoadMoneyRequestStatusController,
+  fetchAllLoadMoneyController,
 };

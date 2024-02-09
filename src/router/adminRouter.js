@@ -12,6 +12,7 @@ import {
   activeOrInActiveMerchantController,
   getMerchantController,
   changeLoadMoneyRequestStatusController,
+  fetchAllLoadMoneyController,
 } from "../controller/adminController.js";
 import { authenticateAdminToken } from "../config/jwtConfig.js";
 
@@ -80,6 +81,12 @@ admin_router.patch(
   `${baseUrl}/loadMoney/status/change`,
   authenticateAdminToken,
   changeLoadMoneyRequestStatusController
+);
+
+admin_router.get(
+  `${baseUrl}/loadMoney`,
+  authenticateAdminToken,
+  fetchAllLoadMoneyController
 );
 
 export { admin_router };
